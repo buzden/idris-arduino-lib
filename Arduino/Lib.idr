@@ -1,9 +1,7 @@
-module Arduino.Runner
+module Arduino.Lib
 
-import Arduino.Boards
-
-import Data.Vect
-import Data.Vect.Quantifiers
+import public Arduino.Boards
+import public Arduino.Wrapper
 
 %default total
 %access export
@@ -22,6 +20,4 @@ namespace Raw
   delay : Int -> IO ()
   delay ms = foreign FFI_C "delay" (Int -> IO ()) ms
 
--- Yet execution is in rigid concrete type. No nice typeclasses, only combinators.
-data Ard : (board : BoardInfo) -> BoardState board -> BoardState board -> Type -> Type where
-  ArdAction : (board : BoardInfo) -> (inS, outS : BoardState board) -> IO a -> Ard board inS outS a
+-- TODO to add all those functions wrapped (returning actions wrapped in `Arduino` "parameterized monad")

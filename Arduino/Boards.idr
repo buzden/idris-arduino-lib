@@ -1,70 +1,100 @@
 module Arduino.Boards
 
-import Arduino.Util
-
-import Data.Vect
-import Data.Vect.Quantifiers
+import public Arduino.Util
 
 %default total
 %access public export
+
+-----------------------
+-----------------------
+---  General stuff  ---
+-----------------------
+-----------------------
 
 -- How arduino pins are designated in board
 data Pin = D Nat
          | A Nat
          | DAC Nat
 
---- Particular hardware pins description ---
+data PinPurpose = Input | Output
 
-record UART_Info (guarantees : Pin -> Type) where
-  constructor MkUartInfo
-  TX, RX : Pin `BoundedWith` guarantees
+data Board = BoardLabel String (Maybe String)
 
-record I2C_Info (guarantees : Pin -> Type) where
-  constructor MkI2cInfo
-  SDA, SCL : Pin `BoundedWith` guarantees
+--------------------------------
+--------------------------------
+---   Binary digital stuff   ---
+--------------------------------
+--------------------------------
 
-record SPI_Info (guarantees : Pin -> Type) where
-  constructor MkSpiInfo
-  MISO, MOSI, SCK, SS : Pin `BoundedWith` guarantees
+data DigitalPinValue = Low | High
 
---- The board-related info ---
-
-record BitResolutionInfo where
-  constructor MkBitResolutionInfo
-
-  -- resolution in bits of underlying hardware
-  hardwareResolution : Nat
-
-  CanBeSetAsResolution : Nat -> Type
-
-  -- resultion that is set after start or reset
-  startupResolution : Nat `BoundedWith` CanBeSetAsResolution
-
-record BoardInfo where
-  constructor MkBoardInfo
-
+interface HasDigitalPins (board : Board) where
   CanBeDigital : Pin -> Type
-  CanBePWM     : Pin -> Type
-  CanBeDAC     : Pin -> Type
-  CanBeADC     : Pin -> Type
 
-  bitResolutionPWN : BitResolutionInfo
-  bitResolutionDAC : BitResolutionInfo
-  bitResolutionADC : BitResolutionInfo
+  lowLevelNumberForDigitalPin : (p : Pin) -> CanBeDigital p => Nat
 
-  CanBeInterrupt : Pin -> Type
-  interruptForPin : (p : Pin) -> CanBeInterrupt p => Nat
+--------------------
+--- Built-in LED ---
+--------------------
 
-  LED  : Pin `BoundedWith` CanBeDigital
-  UART : KnownCountOf $ UART_Info CanBeDigital
-  I2C  : KnownCountOf $ I2C_Info CanBeDigital
-  SPI  : KnownCountOf $ SPI_Info CanBeDigital
+interface HasDigitalPins board => HasBuiltIn_LED (board : Board) where
+  LED : Pin
 
-  -- TODO pins in different lists of a single protocol should be different
-  -- TODO should it be limited that peripheral pin of different protocols should not intersect?
+  Builtin_LED_IsDigital : CanBeDigital {board} LED
 
-record BoardState (board : BoardInfo) where
-  constructor MkBoardState
+--------------------------------
+--- Interrupt-realated stuff ---
+--------------------------------
 
-  -- TODO add known info about pins
-  -- TODO add known info about current resolutions for each group of analogish pins
+namespace Interrupts
+
+  data InterruptEvent = Low | High | Change | Rising | Falling
+
+  interface HasDigitalPins board => HasInterruptPins (board : Board) where
+    CanBeInterrupt : Pin -> Type
+    interruptForPin : (p : Pin) -> CanBeInterrupt p => Nat
+    PinSupportsMode : (p : Pin) -> CanBeInterrupt p => InterruptEvent -> Type
+
+    InterruptPinsAreDigital : (p : Pin) -> CanBeInterrupt p -> CanBeDigital {board} p
+
+----------------------------
+----------------------------
+---   Analog-ish stuff   ---
+----------------------------
+----------------------------
+
+namespace Analogish
+
+  data AnalogType = PWM -- pulse-width modulation
+                  | DAC -- digital-to-analog convertion
+                  | ADC -- analog-to-digital convertion
+
+  interface HasAnalogPins (typ : AnalogType) (board : Board) where
+    CanBeAnalog : Pin -> Type
+
+    lowLevelNumberForAnalogPin : (p : Pin) -> CanBeAnalog p => Nat
+
+    -- resolution in bits of underlying hardware
+    HardwareResolution : Nat
+
+    CanBeSetAsResolution : Nat -> Type
+
+    -- resultion that is set after start or reset
+    StartupResolution : Nat
+
+    StartupResolutionCanBeSet : CanBeSetAsResolution StartupResolution
+
+-----------------------
+-----------------------
+---  General stuff  ---
+-----------------------
+-----------------------
+
+BoardState : Type
+BoardState = List (t : Type ** t) -- omnityped list of facts
+
+CanBeJoined : BoardState -> BoardState -> Type
+CanBeJoined = ?canBeJoined_rhs
+
+JoinStateChanges : (ch1 : BoardState -> BoardState) -> (ch2 : BoardState -> BoardState) -> (inS : BoardState) -> CanBeJoined (ch1 inS) (ch2 inS) => BoardState
+JoinStateChanges = ?joinStateChanges_rhs

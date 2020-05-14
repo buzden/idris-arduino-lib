@@ -1,0 +1,7 @@
+package arduino
+
+modules = Arduino.Boards
+        , Arduino.Lib
+        , Arduino.Protocols
+        , Arduino.Util
+        , Arduino.Wrapper
