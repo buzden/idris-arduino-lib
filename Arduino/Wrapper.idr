@@ -85,3 +85,11 @@ infixl 1 *>>
 ||| Applicative-like `*>` operator but with lazy right argument
 (*>>) : Monad m => Ard board sfL m a -> Lazy (Ard board sfR m b) -> Ard board (sfL >=> sfR) m b
 l *>> r = l >>= \_ => r
+
+----------------------
+--- `Ard`'s runner ---
+----------------------
+
+-- Top-level (at the end of the day) runner for the `Ard`
+runArd : (board : Board) -> {auto ev : IsJust $ sf InitialBoardState} -> Ard board sf m a -> m a
+runArd _ (Wrapped act) = act
