@@ -5,3 +5,5 @@ modules = Arduino.Boards
         , Arduino.Protocols
         , Arduino.Util
         , Arduino.Wrapper
+
+opts = "-p contrib"

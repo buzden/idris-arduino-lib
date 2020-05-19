@@ -3,22 +3,21 @@ module Arduino.Wrapper
 import Arduino.Boards
 import Arduino.Util
 
+import Control.Monad.Syntax
+
 %default total
 %access export
 
 data Ard : (board : Board)
-        -> (statePrecondition : BoardState -> Type)
-        -> (stateChanges : (inS : BoardState) -> statePrecondition inS -> BoardState)
+        -> (stateFun : BoardState -> Maybe BoardState) -- `Nothing` when board's state is not acceptable
         -> (m : Type -> Type) -> Type -> Type where
-  Wrapped : m a -> Ard board statePrecondition stateChanges m a
+  Wrapped : m a -> Ard board stateFun m a
 
-Functor m => Functor (Ard board statePrecondition stateChanges m) where
+Functor m => Functor (Ard board stateFun m) where
   map f (Wrapped act) = Wrapped $ map f act
 
-pure : Applicative m => a -> Ard board (const Unit) (\s, _ => s) m a
+pure : Applicative m => a -> Ard board Prelude.Applicative.pure m a
 pure = Wrapped . pure
 
-(<*>) : Applicative m => Ard board preL chL m (a -> b)
-                      -> Ard board preR chR m a
-                      -> Ard board (\inS => preL inS `AndThen` (preR . chL inS)) (\inS, (ShortConj l r) => chR (chL inS l) r) m b
+(<*>) : Applicative m => Ard board sfL m (a -> b) -> Ard board sfR m a -> Ard board (sfL >=> sfR) m b
 (Wrapped f) <*> (Wrapped x) = Wrapped $ f <*> x
