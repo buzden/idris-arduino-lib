@@ -1,10 +1,18 @@
 module Arduino.Wrapper
 
-import Arduino.Boards
-import Arduino.Util
-
 %default total
-%access export
+
+--- Stuff copied from other modules ---
+
+data Board = BoardLabel String (Maybe String)
+
+BoardState : Type
+BoardState = List (t : Type ** t) -- omnityped list of facts
+
+data AndThen : (l : Type) -> (r : l -> Type) -> Type where
+  ShortConj : (v : l) -> (w : r v) -> l `AndThen` r
+
+--- The Wrapper stuff ---
 
 data Ard : (board : Board)
         -> (statePrecondition : BoardState -> Type)
