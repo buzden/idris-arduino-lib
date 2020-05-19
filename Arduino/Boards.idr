@@ -83,19 +83,3 @@ namespace Analogish
     StartupResolution : Nat
 
     StartupResolutionCanBeSet : CanBeSetAsResolution StartupResolution
-
------------------------
------------------------
----  General stuff  ---
------------------------
------------------------
-
-BoardState : Type
-BoardState = List (t : Type ** t) -- omnityped list of facts
-
-InitialBoardState : BoardState
-InitialBoardState = []
-
--- Returns `Nothing` when not possible
-CombineBoardStates : (before : BoardState) -> (after1, after2 : BoardState) -> Maybe BoardState
-CombineBoardStates = ?combineBoardStates_rhs

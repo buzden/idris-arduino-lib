@@ -8,9 +8,30 @@ import Control.Monad.Syntax
 %default total
 %access export
 
-----------------------------------------------------------------------
---- Data structure embedding effect and its type-level description ---
-----------------------------------------------------------------------
+----------------------------------------------
+----------------------------------------------
+---  Compile-time board state description  ---
+----------------------------------------------
+----------------------------------------------
+
+public export
+BoardState : Type
+BoardState = List (t : Type ** t) -- omnityped list of facts
+
+public export
+InitialBoardState : BoardState
+InitialBoardState = []
+
+-- Returns `Nothing` when not possible
+public export
+CombineBoardStates : (before : BoardState) -> (after1, after2 : BoardState) -> Maybe BoardState
+CombineBoardStates = ?combineBoardStates_rhs
+
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+---  Data structure embedding effect and its type-level description  ---
+------------------------------------------------------------------------
+------------------------------------------------------------------------
 
 data Ard : (board : Board)
         -> (stateFun : BoardState -> Maybe BoardState) -- `Nothing` when board's state is not acceptable
