@@ -38,6 +38,10 @@ data Ard : (board : Board)
         -> (m : Type -> Type) -> Type -> Type where
   Wrapped : m a -> Ard board stateFun m a
 
+export
+ard : m a -> Ard board stateFun m a
+ard = Wrapped
+
 -------------------------
 --- Functor for `Ard` ---
 -------------------------
