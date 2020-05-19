@@ -93,8 +93,6 @@ namespace Analogish
 BoardState : Type
 BoardState = List (t : Type ** t) -- omnityped list of facts
 
-CanBeJoined : BoardState -> BoardState -> Type
-CanBeJoined = ?canBeJoined_rhs
-
-JoinStateChanges : (ch1 : BoardState -> BoardState) -> (ch2 : BoardState -> BoardState) -> (inS : BoardState) -> CanBeJoined (ch1 inS) (ch2 inS) => BoardState
-JoinStateChanges = ?joinStateChanges_rhs
+-- Returns `Nothing` when not possible
+CombineBoardStates : (before : BoardState) -> (after1, after2 : BoardState) -> Maybe BoardState
+CombineBoardStates = ?combineBoardStates_rhs
