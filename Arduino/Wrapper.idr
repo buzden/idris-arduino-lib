@@ -17,33 +17,24 @@ public export
 Fact : Type
 Fact = (obj : Type ** x : obj ** fact : (obj -> Type) ** fact x)
 
+infixl 6 `Then`, `Then1`
+
+-- Specialized list is used to make used to not be able to append the wrong side and similar things.
 public export
-FactsList : Type
-FactsList = List Fact -- omnityped list of facts
+data FactsList : Type where
+  NoFacts : FactsList
+  Then1   : FactsList -> Fact -> FactsList
 
--- TODO To replace `List Fact` with a special type having `NoFacts` and `Then1` as a constructors.
-
--- TODO To think of *list of lists of facts* instead of just a *list of facts*.
+-- TODO To think of adding `ThenAtomic : FactsList -> List Fact -> FactsList` or similar constructor.
 --      This is to give an ability to add two facts at once ("atomically")
 --      without any need to check parallel computation on each separate added fact.
---
---      However, already passed facts can still be hold flattened.
-
-public export
-NoFacts : FactsList
-NoFacts = empty
 
 --- Sequencing ---
 
-infixl 6 `Then`, `Then1`
-
 public export
 Then : FactsList -> FactsList -> FactsList
-Then = flip (++)
-
-public export
-Then1 : FactsList -> Fact -> FactsList
-Then1 = flip (::)
+Then fs NoFacts        = fs
+Then fs (ss `Then1` x) = (fs `Then` ss) `Then1` x
 
 ||| Type-level conjunction of two preconditions with a modification of input between.
 public export
@@ -108,7 +99,7 @@ empty = Wrapped empty
 ||| Means that given condition is true on given `facts` prepended with all prefixes (incl. empty) of `addition` list.
 public export
 data WithAllAdditions : (cond : FactsList -> Type) -> (facts : FactsList) -> (addition : FactsList) -> Type where
-  Nil  : {auto ev : cond facts} -> WithAllAdditions cond facts []
+  Nil  : {auto ev : cond facts} -> WithAllAdditions cond facts NoFacts
   (::) : (fact : Fact) -> {auto ev : cond $ facts `Then` addition `Then1` fact} -> WithAllAdditions cond facts addition -> WithAllAdditions cond facts (addition `Then1` fact)
 
 -- TODO to replace those above with a check on a full interleaving of after-fact prefixes.
