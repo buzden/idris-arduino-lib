@@ -14,8 +14,14 @@ import Control.Monad.Syntax
 ----------------------------------------------
 
 public export
+Fact : Type
+Fact = (obj : Type ** x : obj ** fact : (obj -> Type) ** fact x)
+
+public export
 FactsList : Type
-FactsList = List (obj : Type ** x : obj ** fact : (obj -> Type) ** fact x) -- omnityped list of facts
+FactsList = List Fact -- omnityped list of facts
+
+-- TODO To replace `List Fact` with a special type having `NoFacts` and `Then1` as a constructors.
 
 -- TODO To think of *list of lists of facts* instead of just a *list of facts*.
 --      This is to give an ability to add two facts at once ("atomically")
@@ -23,10 +29,26 @@ FactsList = List (obj : Type ** x : obj ** fact : (obj -> Type) ** fact x) -- om
 --
 --      However, already passed facts can still be hold flattened.
 
--- Returns `Nothing` when not possible
 public export
-CombineFactsLists : (before : FactsList) -> (after1, after2 : FactsList) -> Maybe FactsList
-CombineFactsLists = ?combineFactsLists_rhs
+NoFacts : FactsList
+NoFacts = empty
+
+--- Sequencing ---
+
+infixl 6 `Then`, `Then1`
+
+public export
+Then : FactsList -> FactsList -> FactsList
+Then = flip (++)
+
+public export
+Then1 : FactsList -> Fact -> FactsList
+Then1 = flip (::)
+
+||| Type-level conjunction of two preconditions with a modification of input between.
+public export
+ConseqConj : (FactsList -> Type) -> FactsList -> (FactsList -> Type) -> FactsList -> Type
+ConseqConj preL afterL preR fs = (preL fs, preR $ fs `Then` afterL)
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
@@ -36,12 +58,13 @@ CombineFactsLists = ?combineFactsLists_rhs
 
 export
 data Ard : (board : Board)
-        -> (stateFun : FactsList -> Maybe FactsList) -- `Nothing` when board's state is not acceptable
+        -> (precond : FactsList -> Type)
+        -> (afterFacts : FactsList)
         -> (m : Type -> Type) -> Type -> Type where
-  Wrapped : m a -> Ard board stateFun m a
+  Wrapped : m a -> Ard board precond afterFacts m a
 
 export
-ard : m a -> Ard board stateFun m a
+ard : m a -> Ard board precond afterFacts m a
 ard = Wrapped
 
 -------------------------
@@ -49,7 +72,7 @@ ard = Wrapped
 -------------------------
 
 export
-Functor m => Functor (Ard board stateFun m) where
+Functor m => Functor (Ard board precond afterFacts m) where
   map f (Wrapped act) = Wrapped $ map f act
 
 --------------------------------------------
@@ -57,73 +80,77 @@ Functor m => Functor (Ard board stateFun m) where
 --------------------------------------------
 
 export
-pure : Applicative m => a -> Ard board Prelude.Applicative.pure m a
+pure : Applicative m => a -> Ard board (const Unit) NoFacts m a
 pure = Wrapped . pure
 
 export
-(<*>) : Applicative m => Ard board sfL m (a -> b) -> Ard board sfR m a -> Ard board (sfL >=> sfR) m b
+(<*>) : Applicative m => Ard board preL afL m (a -> b) -> Ard board preR afL m a -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
 (Wrapped f) <*> (Wrapped x) = Wrapped $ f <*> x
 
 --- Additional applicative-like syntax ---
 
 export
-(*>) : Applicative m => Ard board sfL m a -> Ard board sfR m b -> Ard board (sfL >=> sfR) m b
+(*>) : Applicative m => Ard board preL afL m a -> Ard board preR afR m b -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
 (Wrapped l) *> (Wrapped r) = Wrapped $ l *> r
 
 export
-(<*) : Applicative m => Ard board sfL m a -> Ard board sfR m b -> Ard board (sfL >=> sfR) m a
+(<*) : Applicative m => Ard board preL afL m a -> Ard board preR afR m b -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m a
 (Wrapped l) <* (Wrapped r) = Wrapped $ l <* r
 
 --------------------------------------------
 --- Alternative-like functions for `Ard` ---
 --------------------------------------------
 
--- TODO to think whether `Applicative.pure` is a correct state change parameter for the `empty` action.
 export
-empty : Alternative m => Ard board Prelude.Applicative.pure m a
-empty = Wrapped $ empty
+empty : Alternative m => Ard board (const Unit) NoFacts m a
+empty = Wrapped empty
 
--- The following function is a workarond of a compiler bug, which you run into when inline it.
-public export -- because it is used in the type signature of `export`'ed `(<|>)`
-CombineMaybeFactsLists : FactsList -> Maybe FactsList -> Maybe FactsList -> Maybe FactsList
-CombineMaybeFactsLists original ml mr = CombineFactsLists original !ml !mr
+||| Means that given condition is true on given `facts` prepended with all prefixes (incl. empty) of `addition` list.
+public export
+data WithAllAdditions : (cond : FactsList -> Type) -> (facts : FactsList) -> (addition : FactsList) -> Type where
+  Nil  : {auto ev : cond facts} -> WithAllAdditions cond facts []
+  (::) : (fact : Fact) -> {auto ev : cond $ facts `Then` addition `Then1` fact} -> WithAllAdditions cond facts addition -> WithAllAdditions cond facts (addition `Then1` fact)
+
+-- TODO to replace those above with a check on a full interleaving of after-fact prefixes.
 
 export
-(<|>) : Alternative m => Ard board sfL m a
-                      -> Ard board sfR m a
-                      -> Ard board (\st => CombineMaybeFactsLists st (sfL st) (sfR st)) m a
+(<|>) : Alternative m => Ard board preL afL m a
+                      -> Ard board preR afR m a
+                      -> Ard board (\fs => (WithAllAdditions preL fs afR, WithAllAdditions preR fs afL)) (afL `Then` afR) m a
 (Wrapped l) <|> (Wrapped r) = Wrapped $ l <|> r
+
+-- TODO to think whether sequential composition of facts (i.e., ``afL `Then` afR``) is enough for the resulting after-facts of parallel composition.
 
 --------------------------------------
 --- Monad-like functions for `Ard` ---
 --------------------------------------
 
 export
-(>>=) : Monad m => Ard board sfL m a -> (a -> Ard board sfR m b) -> Ard board (sfL >=> sfR) m b
+(>>=) : Monad m => Ard board preL afL m a -> (a -> Ard board preR afR m b) -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
 (Wrapped l) >>= f = Wrapped $ l >>= \x => let Wrapped r = f x in r
 
 export
-join : Monad m => Ard board sfL m (Ard board sfR m a) -> Ard board (sfL >=> sfR) m a
+join : Monad m => Ard board preL afL m (Ard board preR afR m a) -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m a
 join (Wrapped l) = Wrapped $ l >>= \ard => let Wrapped r = ard in r
 
 --- Additional monad-like syntax ---
 
 export
-(=<<) : Monad m => (a -> Ard board sfR m b) -> Ard board sfL m a -> Ard board (sfL >=> sfR) m b
+(=<<) : Monad m => (a -> Ard board preR afR m b) -> Ard board preL afL m a -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
 (=<<) = flip (>>=)
 
 export
-(>=>) : Monad m => (a -> Ard board sfL m b) -> (b -> Ard board sfR m c) -> a -> Ard board (sfL >=> sfR) m c
+(>=>) : Monad m => (a -> Ard board preL afL m b) -> (b -> Ard board preR afR m c) -> a -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m c
 (>=>) fl fr x = fl x >>= fr
 
 export
-(<=<) : Monad m => (b -> Ard board sfR m c) -> (a -> Ard board sfL m b) -> a -> Ard board (sfL >=> sfR) m c
+(<=<) : Monad m => (b -> Ard board preR afR m c) -> (a -> Ard board preL afL m b) -> a -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m c
 (<=<) = flip (>=>)
 
 infixl 1 *>>
 ||| Applicative-like `*>` operator but with lazy right argument
 export
-(*>>) : Monad m => Ard board sfL m a -> Lazy (Ard board sfR m b) -> Ard board (sfL >=> sfR) m b
+(*>>) : Monad m => Ard board preL afL m a -> Lazy (Ard board preR afR m b) -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
 l *>> r = l >>= \_ => r
 
 ----------------------
@@ -132,5 +159,7 @@ l *>> r = l >>= \_ => r
 
 -- Top-level (at the end of the day) runner for the `Ard`
 export
-runArd : (board : Board) -> {auto ev : IsJust $ sf Prelude.Applicative.empty} -> Ard board sf m a -> m a
+runArd : (board : Board) -> Ard board precond af m a -> {auto prf : precond NoFacts} -> m a
 runArd _ (Wrapped act) = act
+
+-- TODO `board` argument should be compile-time only, i.e. have quantity of `0`.
