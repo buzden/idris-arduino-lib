@@ -14,17 +14,19 @@ import Control.Monad.Syntax
 ----------------------------------------------
 
 public export
-BoardState : Type
-BoardState = List (t : Type ** t) -- omnityped list of facts
+FactsList : Type
+FactsList = List (obj : Type ** x : obj ** fact : (obj -> Type) ** fact x) -- omnityped list of facts
 
-public export
-InitialBoardState : BoardState
-InitialBoardState = []
+-- TODO To think of *list of lists of facts* instead of just a *list of facts*.
+--      This is to give an ability to add two facts at once ("atomically")
+--      without any need to check parallel computation on each separate added fact.
+--
+--      However, already passed facts can still be hold flattened.
 
 -- Returns `Nothing` when not possible
 public export
-CombineBoardStates : (before : BoardState) -> (after1, after2 : BoardState) -> Maybe BoardState
-CombineBoardStates = ?combineBoardStates_rhs
+CombineFactsLists : (before : FactsList) -> (after1, after2 : FactsList) -> Maybe FactsList
+CombineFactsLists = ?combineFactsLists_rhs
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
@@ -34,7 +36,7 @@ CombineBoardStates = ?combineBoardStates_rhs
 
 export
 data Ard : (board : Board)
-        -> (stateFun : BoardState -> Maybe BoardState) -- `Nothing` when board's state is not acceptable
+        -> (stateFun : FactsList -> Maybe FactsList) -- `Nothing` when board's state is not acceptable
         -> (m : Type -> Type) -> Type -> Type where
   Wrapped : m a -> Ard board stateFun m a
 
@@ -83,13 +85,13 @@ empty = Wrapped $ empty
 
 -- The following function is a workarond of a compiler bug, which you run into when inline it.
 public export -- because it is used in the type signature of `export`'ed `(<|>)`
-CombineMaybeBoardStates : BoardState -> Maybe BoardState -> Maybe BoardState -> Maybe BoardState
-CombineMaybeBoardStates original ml mr = CombineBoardStates original !ml !mr
+CombineMaybeFactsLists : FactsList -> Maybe FactsList -> Maybe FactsList -> Maybe FactsList
+CombineMaybeFactsLists original ml mr = CombineFactsLists original !ml !mr
 
 export
 (<|>) : Alternative m => Ard board sfL m a
                       -> Ard board sfR m a
-                      -> Ard board (\st => CombineMaybeBoardStates st (sfL st) (sfR st)) m a
+                      -> Ard board (\st => CombineMaybeFactsLists st (sfL st) (sfR st)) m a
 (Wrapped l) <|> (Wrapped r) = Wrapped $ l <|> r
 
 --------------------------------------
@@ -130,5 +132,5 @@ l *>> r = l >>= \_ => r
 
 -- Top-level (at the end of the day) runner for the `Ard`
 export
-runArd : (board : Board) -> {auto ev : IsJust $ sf InitialBoardState} -> Ard board sf m a -> m a
+runArd : (board : Board) -> {auto ev : IsJust $ sf Prelude.Applicative.empty} -> Ard board sf m a -> m a
 runArd _ (Wrapped act) = act
