@@ -4,7 +4,6 @@ import public Arduino.Boards
 import public Arduino.Wrapper
 
 %default total
-%access export
 
 namespace Raw
   %access private
@@ -20,4 +19,32 @@ namespace Raw
   delay : Int -> IO ()
   delay ms = foreign FFI_C "delay" (Int -> IO ()) ms
 
--- TODO to add all those functions wrapped (returning actions wrapped in `Arduino` "parameterized monad")
+-- Note: functions naming was left to be (at least for now) as they were at the the original Arduino software.
+
+-- For now, this function is meant to be used only with digital pins.
+-- Also, for now, it is using `IO` directly under the `Ard`.
+export
+pinMode : {board : Board} -> {auto hdp : HasDigitalPins board}
+       -> (pin : Pin) -> {auto cbd : CanBeDigital {board} pin}
+       -> (purpose : PinPurpose)
+       -> Ard board (const Unit) (oneFact pin purpose) IO ()
+pinMode {board} {cbd} pin purpose = ard $ Raw.pinMode (toIntNat $ lowLevelNumberForDigitalPin {board} pin @{cbd}) (lowLevelNumberForPurpose purpose)
+  where lowLevelNumberForPurpose : PinPurpose -> Int
+        lowLevelNumberForPurpose Input  = 0
+        lowLevelNumberForPurpose Output = 1
+
+export
+digitalWrite : {board : Board} -> {auto hdp : HasDigitalPins board}
+            -> (pin : Pin) -> {auto cbd : CanBeDigital {board} pin}
+            -> DigitalPinValue
+            -> Ard board (LastFactEq pin Output) NoFacts IO ()
+digitalWrite {board} {cbd} pin value = ard $ Raw.digitalWrite (toIntNat $ lowLevelNumberForDigitalPin {board} pin @{cbd}) (lowLevelNumberForValue value)
+  where lowLevelNumberForValue : DigitalPinValue -> Int
+        lowLevelNumberForValue Low  = 0
+        lowLevelNumberForValue High = 1
+
+-- TODO To use better representation for time.
+-- TODO To think, whether time delay is a fact to represent at the typelevel or not.
+export
+delay : {board : Board} -> (microseconds : Nat) -> Ard board (const Unit) NoFacts IO ()
+delay = ard . Raw.delay . toIntNat
