@@ -2,6 +2,7 @@ package arduino
 
 modules = Arduino.Boards
         , Arduino.Lib
+        , Arduino.Mega
         , Arduino.Protocols
         , Arduino.Util
         , Arduino.Wrapper
