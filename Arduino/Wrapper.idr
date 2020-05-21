@@ -34,6 +34,9 @@ data FactsList : Type where
 --      This is to give an ability to add two facts at once ("atomically")
 --      without any need to check parallel computation on each separate added fact.
 
+-- TODO To think of `Then1` constructor that actually adds only when added stuff differs from the last known for the given object and fact type.
+--      Think of forever spinning: this shouldn't add infinite amount of new facts if only one fact happens constantly.
+
 --- Building ---
 
 public export
@@ -49,6 +52,9 @@ Then fs (ss `Then1` x) = (fs `Then` ss) `Then1` x
 public export
 ConseqConj : (FactsList -> Type) -> FactsList -> (FactsList -> Type) -> FactsList -> Type
 ConseqConj preL afterL preR fs = (preL fs, preR $ fs `Then` afterL)
+
+-- TODO To make the "conjunction" above to have a single canonical form, e.g. to have `Conseq p NoFact p` be actually equal to `p` itself.
+--      This is important e.g. for having non-hacking way for implementing `forever`.
 
 --- Querying ---
 
@@ -158,6 +164,11 @@ export
 export
 join : Monad m => Ard board preL afL m (Ard board preR afR m a) -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m a
 join (Wrapped l) = Wrapped $ l >>= \ard => let Wrapped r = ard in r
+
+export covering
+forever : Monad m => Ard board pre NoFacts m a -> Ard board pre NoFacts m b
+forever (Wrapped x) = Wrapped foreverX
+  where foreverX = x >>= \_ => foreverX
 
 --- Additional monad-like syntax ---
 
