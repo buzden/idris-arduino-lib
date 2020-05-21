@@ -15,9 +15,14 @@ import Control.Monad.Syntax
 
 public export
 Fact : Type
-Fact = (obj : Type ** x : obj ** fact : (obj -> Type) ** fact x)
+Fact = ((objType : Type ** objType), (factType : Type ** factType))
 
-infixl 6 `Then`, `Then1`
+infix 6 `withFact`
+infixl 5 `Then`, `Then1`
+
+public export
+withFact : (obj : objType) -> (fact : factType) -> Fact
+withFact obj fact = ((_ ** obj), (_ ** fact))
 
 -- Specialized list is used to make used to not be able to append the wrong side and similar things.
 public export
@@ -29,7 +34,11 @@ data FactsList : Type where
 --      This is to give an ability to add two facts at once ("atomically")
 --      without any need to check parallel computation on each separate added fact.
 
---- Sequencing ---
+--- Building ---
+
+public export
+oneFact : (obj : objType) -> (fact : factType) -> FactsList
+oneFact = Then1 NoFacts .. withFact
 
 public export
 Then : FactsList -> FactsList -> FactsList
@@ -40,6 +49,32 @@ Then fs (ss `Then1` x) = (fs `Then` ss) `Then1` x
 public export
 ConseqConj : (FactsList -> Type) -> FactsList -> (FactsList -> Type) -> FactsList -> Type
 ConseqConj preL afterL preR fs = (preL fs, preR $ fs `Then` afterL)
+
+--- Querying ---
+
+public export
+data LastFactEq : (obj : objType) -> (expectedFact : factType) -> FactsList -> Type where
+  LastMatches : (facts : FactsList)
+             -> (obj : objType)
+             -> (fact : factType)
+             -> LastFactEq obj fact $ facts `Then1` obj `withFact` fact
+  AnotherFactType : {fact : factType}
+                 -> LastFactEq obj fact facts
+                 -> (another : anotherFactType)
+                 -> Uninhabited (factType = anotherFactType)
+                 => LastFactEq obj fact $ facts `Then1` obj `withFact` another
+  AnotherObj : {obj : objType}
+            -> LastFactEq obj ft facts
+            -> (anotherObj : objType)
+            -> Uninhabited (obj = anotherObj)
+            => LastFactEq obj ft $ facts `Then1` anotherObj `withFact` someFact
+  AnotherObjType : {obj : objType}
+                -> LastFactEq obj ft facts
+                -> (anotherObj : anotherObjType)
+                -> Uninhabited (objType = anotherObjType)
+                => LastFactEq obj ft $ facts `Then1` anotherObj `withFact` someFact
+
+  -- Well, `AnotherObj` and `AnotherObjType` can be joined, but I'm afraid of applying `=` to stuff with different types?
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
