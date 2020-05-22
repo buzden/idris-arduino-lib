@@ -1,13 +1,20 @@
-module Arduino.Blink
-
 import Arduino.Lib
 import Arduino.Mega
 
+%hint
+x : Nat
+x = 13
+
+%hint
+y : Pin
+y = D x
+
+export
 main : IO ()
-main = runArd Mega2560 $
-  do pinMode LED Output
+main = runArd Mega2560 $ do
+     pinMode (D 13) Output
      forever $ do
-       digitalWrite LED High
+       digitalWrite (D 13) High
        delay 1000
-       digitalWrite LED Low
+       digitalWrite (D 13) Low
        delay 2000
