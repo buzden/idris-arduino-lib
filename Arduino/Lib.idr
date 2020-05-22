@@ -10,11 +10,11 @@ namespace Raw
 
   %include C "Arduino.h"
 
-  digitalWrite : Int -> Int -> IO ()
-  digitalWrite pin val = foreign FFI_C "digitalWrite" (Int -> Int -> IO ()) pin val
+  digitalWrite : Bits8 -> Bits8 -> IO ()
+  digitalWrite pin val = foreign FFI_C "digitalWrite" (Bits8 -> Bits8 -> IO ()) pin val
 
-  pinMode : Int -> Int -> IO ()
-  pinMode pin mode = foreign FFI_C "pinMode" (Int -> Int -> IO ()) pin mode
+  pinMode : Bits8 -> Bits8 -> IO ()
+  pinMode pin mode = foreign FFI_C "pinMode" (Bits8 -> Bits8 -> IO ()) pin mode
 
   delay : Int -> IO ()
   delay ms = foreign FFI_C "delay" (Int -> IO ()) ms
@@ -28,8 +28,8 @@ pinMode : {board : Board} -> {auto hdp : HasDigitalPins board}
        -> (pin : Pin) -> {auto cbd : CanBeDigital {board} pin}
        -> (purpose : PinPurpose)
        -> Ard board (const Unit) (oneFact pin purpose) IO ()
-pinMode {board} {cbd} pin purpose = ard $ Raw.pinMode (toIntNat $ lowLevelNumberForDigitalPin {board} pin) (lowLevelNumberForPurpose purpose)
-  where lowLevelNumberForPurpose : PinPurpose -> Int
+pinMode {board} {cbd} pin purpose = ard $ Raw.pinMode (lowLevelNumberForDigitalPin {board} pin) (lowLevelNumberForPurpose purpose)
+  where lowLevelNumberForPurpose : PinPurpose -> Bits8
         lowLevelNumberForPurpose Input  = 0
         lowLevelNumberForPurpose Output = 1
 
@@ -38,8 +38,8 @@ digitalWrite : {board : Board} -> {auto hdp : HasDigitalPins board}
             -> (pin : Pin) -> {auto cbd : CanBeDigital {board} pin}
             -> DigitalPinValue
             -> Ard board (LastFactEq pin Output) NoFacts IO ()
-digitalWrite {board} {cbd} pin value = ard $ Raw.digitalWrite (toIntNat $ lowLevelNumberForDigitalPin {board} pin) (lowLevelNumberForValue value)
-  where lowLevelNumberForValue : DigitalPinValue -> Int
+digitalWrite {board} {cbd} pin value = ard $ Raw.digitalWrite (lowLevelNumberForDigitalPin {board} pin) (lowLevelNumberForValue value)
+  where lowLevelNumberForValue : DigitalPinValue -> Bits8
         lowLevelNumberForValue Low  = 0
         lowLevelNumberForValue High = 1
 

@@ -31,7 +31,8 @@ data DigitalPinValue = Low | High
 interface HasDigitalPins (board : Board) where
   CanBeDigital : Pin -> Type
 
-  lowLevelNumberForDigitalPin : (p : Pin) -> {auto cbd : CanBeDigital p} -> Nat
+  lowLevelNumberForDigitalPin : (p : Pin) -> {auto cbd : CanBeDigital p} -> Bits8
+  -- TODO To think, maybe use `Fin 256` instead?
 
 --------------------
 --- Built-in LED ---
@@ -72,7 +73,8 @@ namespace Analogish
   interface HasAnalogPins (typ : AnalogType) (board : Board) where
     CanBeAnalog : Pin -> Type
 
-    lowLevelNumberForAnalogPin : (p : Pin) -> {auto cba : CanBeAnalog p} -> Nat
+    lowLevelNumberForAnalogPin : (p : Pin) -> {auto cba : CanBeAnalog p} -> Bits8
+    -- TODO To think, maybe use `Fin 256` instead?
 
     -- resolution in bits of underlying hardware
     HardwareResolution : Nat
