@@ -20,4 +20,4 @@ HasDigitalPins Mega2560 where
 public export
 HasBuiltIn_LED Mega2560 where
   LED = D 13
-  Builtin_LED_IsDigital = SummonAuto
+  Builtin_LED_IsDigital = DD _

@@ -31,7 +31,7 @@ data DigitalPinValue = Low | High
 interface HasDigitalPins (board : Board) where
   CanBeDigital : Pin -> Type
 
-  lowLevelNumberForDigitalPin : (p : Pin) -> CanBeDigital p => Nat
+  lowLevelNumberForDigitalPin : (p : Pin) -> {auto cbd : CanBeDigital p} -> Nat
 
 --------------------
 --- Built-in LED ---
@@ -52,8 +52,8 @@ namespace Interrupts
 
   interface HasDigitalPins board => HasInterruptPins (board : Board) where
     CanBeInterrupt : Pin -> Type
-    interruptForPin : (p : Pin) -> CanBeInterrupt p => Nat
-    PinSupportsMode : (p : Pin) -> CanBeInterrupt p => InterruptEvent -> Type
+    interruptForPin : (p : Pin) -> {auto cbi : CanBeInterrupt p} -> Nat
+    PinSupportsMode : (p : Pin) -> {auto cbi : CanBeInterrupt p} -> InterruptEvent -> Type
 
     InterruptPinsAreDigital : (p : Pin) -> CanBeInterrupt p -> CanBeDigital {board} p
 
@@ -72,7 +72,7 @@ namespace Analogish
   interface HasAnalogPins (typ : AnalogType) (board : Board) where
     CanBeAnalog : Pin -> Type
 
-    lowLevelNumberForAnalogPin : (p : Pin) -> CanBeAnalog p => Nat
+    lowLevelNumberForAnalogPin : (p : Pin) -> {auto cba : CanBeAnalog p} -> Nat
 
     -- resolution in bits of underlying hardware
     HardwareResolution : Nat

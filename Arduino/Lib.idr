@@ -28,7 +28,7 @@ pinMode : {board : Board} -> {auto hdp : HasDigitalPins board}
        -> (pin : Pin) -> {auto cbd : CanBeDigital {board} pin}
        -> (purpose : PinPurpose)
        -> Ard board (const Unit) (oneFact pin purpose) IO ()
-pinMode {board} {cbd} pin purpose = ard $ Raw.pinMode (toIntNat $ lowLevelNumberForDigitalPin {board} pin @{cbd}) (lowLevelNumberForPurpose purpose)
+pinMode {board} {cbd} pin purpose = ard $ Raw.pinMode (toIntNat $ lowLevelNumberForDigitalPin {board} pin) (lowLevelNumberForPurpose purpose)
   where lowLevelNumberForPurpose : PinPurpose -> Int
         lowLevelNumberForPurpose Input  = 0
         lowLevelNumberForPurpose Output = 1
@@ -38,7 +38,7 @@ digitalWrite : {board : Board} -> {auto hdp : HasDigitalPins board}
             -> (pin : Pin) -> {auto cbd : CanBeDigital {board} pin}
             -> DigitalPinValue
             -> Ard board (LastFactEq pin Output) NoFacts IO ()
-digitalWrite {board} {cbd} pin value = ard $ Raw.digitalWrite (toIntNat $ lowLevelNumberForDigitalPin {board} pin @{cbd}) (lowLevelNumberForValue value)
+digitalWrite {board} {cbd} pin value = ard $ Raw.digitalWrite (toIntNat $ lowLevelNumberForDigitalPin {board} pin) (lowLevelNumberForValue value)
   where lowLevelNumberForValue : DigitalPinValue -> Int
         lowLevelNumberForValue Low  = 0
         lowLevelNumberForValue High = 1
