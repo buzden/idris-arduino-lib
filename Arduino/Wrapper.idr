@@ -48,10 +48,31 @@ Then : FactsList -> FactsList -> FactsList
 Then fs NoFacts        = fs
 Then fs (ss `Then1` x) = (fs `Then` ss) `Then1` x
 
-||| Type-level conjunction of two preconditions with a modification of input between.
 public export
-ConseqConj : (FactsList -> Type) -> FactsList -> (FactsList -> Type) -> FactsList -> Type
-ConseqConj preL afterL preR fs = (preL fs, preR $ fs `Then` afterL)
+data IsContainedIn : (what : Type) -> (wh : Type) -> Type where
+  Base    : x `IsContainedIn` x
+  AddTop  : x `IsContainedIn` (rest, x)
+  AddDeep : x `IsContainedIn` outer -> x `IsContainedIn` (outer, y)
+
+public export
+data IsTypeConj : (l : Type) -> (r : Type) -> (res : Type) -> Type where
+  LeftId         : IsTypeConj Unit r    r
+  RighId         : IsTypeConj l    Unit l
+  LeftZero       : IsTypeConj Void r    Void
+  RightZero      : IsTypeConj l    Void Void
+  LeftEqual      : {auto eq : l = r} -> IsTypeConj l r l
+  RightEqual     : {auto eq : l = r} -> IsTypeConj l r r
+  LeftContained  : {auto ev : r `IsContainedIn` l} -> IsTypeConj l r l
+  RightContained : {auto ev : l `IsContainedIn` r} -> IsTypeConj l r r
+--  Both           : IsTypeConj l r (l, r)
+
+public export
+TypeConj : (l : Type) -> (r : Type) -> {auto itc : IsTypeConj l r res} -> Type
+TypeConj {res} _ _ = res
+
+public export
+data IsConseqConj : (FactsList -> Type) -> FactsList -> (FactsList -> Type) -> (res : FactsList -> Type) -> Type where
+  MkConseqConj : {auto itc : IsTypeConj (preL fs) (preR $ fs `Then` afterL) (res fs)} -> IsConseqConj preL afterL preR res
 
 -- TODO To make the "conjunction" above to have a single canonical form, e.g. to have `Conseq p NoFact p` be actually equal to `p` itself.
 --      This is important e.g. for having non-hacking way for implementing `forever`.
@@ -116,17 +137,20 @@ pure : Applicative m => a -> Ard board (const Unit) NoFacts m a
 pure = Wrapped . pure
 
 export
-(<*>) : Applicative m => Ard board preL afL m (a -> b) -> Ard board preR afL m a -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
+(<*>) : Applicative m => Ard board preL afL m (a -> b) -> Ard board preR afL m a
+     -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m b
 (Wrapped f) <*> (Wrapped x) = Wrapped $ f <*> x
 
 --- Additional applicative-like syntax ---
 
 export
-(*>) : Applicative m => Ard board preL afL m a -> Ard board preR afR m b -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
+(*>) : Applicative m => Ard board preL afL m a -> Ard board preR afR m b
+    -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m b
 (Wrapped l) *> (Wrapped r) = Wrapped $ l *> r
 
 export
-(<*) : Applicative m => Ard board preL afL m a -> Ard board preR afR m b -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m a
+(<*) : Applicative m => Ard board preL afL m a -> Ard board preR afR m b
+    -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m a
 (Wrapped l) <* (Wrapped r) = Wrapped $ l <* r
 
 --------------------------------------------
@@ -158,11 +182,13 @@ export
 --------------------------------------
 
 export
-(>>=) : Monad m => Ard board preL afL m a -> (a -> Ard board preR afR m b) -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
+(>>=) : Monad m => Ard board preL afL m a -> (a -> Ard board preR afR m b)
+     -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m b
 (Wrapped l) >>= f = Wrapped $ l >>= \x => let Wrapped r = f x in r
 
 export
-join : Monad m => Ard board preL afL m (Ard board preR afR m a) -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m a
+join : Monad m => Ard board preL afL m (Ard board preR afR m a)
+    -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m a
 join (Wrapped l) = Wrapped $ l >>= \ard => let Wrapped r = ard in r
 
 export covering
@@ -173,21 +199,25 @@ forever (Wrapped x) = Wrapped foreverX
 --- Additional monad-like syntax ---
 
 export
-(=<<) : Monad m => (a -> Ard board preR afR m b) -> Ard board preL afL m a -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
+(=<<) : Monad m => (a -> Ard board preR afR m b) -> Ard board preL afL m a
+     -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m b
 (=<<) = flip (>>=)
 
 export
-(>=>) : Monad m => (a -> Ard board preL afL m b) -> (b -> Ard board preR afR m c) -> a -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m c
+(>=>) : Monad m => (a -> Ard board preL afL m b) -> (b -> Ard board preR afR m c) -> a
+     -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m c
 (>=>) fl fr x = fl x >>= fr
 
 export
-(<=<) : Monad m => (b -> Ard board preR afR m c) -> (a -> Ard board preL afL m b) -> a -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m c
+(<=<) : Monad m => (b -> Ard board preR afR m c) -> (a -> Ard board preL afL m b) -> a
+     -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m c
 (<=<) = flip (>=>)
 
 infixl 1 *>>
 ||| Applicative-like `*>` operator but with lazy right argument
 export
-(*>>) : Monad m => Ard board preL afL m a -> Lazy (Ard board preR afR m b) -> Ard board (ConseqConj preL afL preR) (afL `Then` afR) m b
+(*>>) : Monad m => Ard board preL afL m a -> Lazy (Ard board preR afR m b)
+     -> {auto icj : IsConseqConj preL afL preR conj} -> Ard board conj (afL `Then` afR) m b
 l *>> r = l >>= \_ => r
 
 ----------------------
