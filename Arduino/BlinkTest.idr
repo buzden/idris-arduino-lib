@@ -1,9 +1,15 @@
 import Arduino.Lib
 import Arduino.Mega
 
+import Data.Fin
+
 %hint
 x : Nat
 x = 13
+
+%hint
+x' : Fin 54
+x' = 13
 
 %hint
 y : Pin

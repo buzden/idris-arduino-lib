@@ -64,3 +64,10 @@ infixr 9 .., ...
 
 (...) : (d -> e) -> (a -> b -> c -> d) -> a -> b -> c -> e
 (...) = (.) . (..)
+
+------------------------
+--- Data conversions ---
+------------------------
+
+finToBits8 : Fin 256 -> Bits8
+finToBits8 = fromInteger . finToInteger
