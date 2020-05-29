@@ -1,6 +1,7 @@
 package arduino
 
 modules = Arduino.Boards
+        , Arduino.Coop
         , Arduino.Lib
         , Arduino.Mega
         , Arduino.Protocols
