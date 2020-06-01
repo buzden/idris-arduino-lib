@@ -1,6 +1,7 @@
 module Arduino.Lib
 
 import public Arduino.Boards
+import Arduino.Coop
 import public Arduino.Wrapper
 
 %default total
@@ -21,6 +22,15 @@ namespace Raw
     pinMode      = foreign FFI_C "pinMode"      (Bits8 -> Bits8 -> IO ())
     delay        = foreign FFI_C "delay"        (Int -> IO ())
     millis       = foreign FFI_C "millis"       (IO Int)
+
+  Timed IO where
+    currentTime = map toNat millis
+
+  LowLevelArduino m => LowLevelArduino (Coop m) where
+    digitalWrite = lift .. digitalWrite
+    pinMode      = lift .. pinMode
+    delay        = lift . delay
+    millis       = lift millis
 
 -- Note: functions naming was left to be (at least for now) as they were at the the original Arduino software.
 
