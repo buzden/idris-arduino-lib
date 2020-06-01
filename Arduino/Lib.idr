@@ -8,16 +8,17 @@ import public Arduino.Wrapper
 namespace Raw
   %access private
 
+  interface LowLevelArduino (m : Type -> Type) where
+    digitalWrite : Bits8 -> Bits8 -> m ()
+    pinMode      : Bits8 -> Bits8 -> m ()
+    delay        : Int -> m ()
+
   %include C "Arduino.h"
 
-  digitalWrite : Bits8 -> Bits8 -> IO ()
-  digitalWrite pin val = foreign FFI_C "digitalWrite" (Bits8 -> Bits8 -> IO ()) pin val
-
-  pinMode : Bits8 -> Bits8 -> IO ()
-  pinMode pin mode = foreign FFI_C "pinMode" (Bits8 -> Bits8 -> IO ()) pin mode
-
-  delay : Int -> IO ()
-  delay ms = foreign FFI_C "delay" (Int -> IO ()) ms
+  LowLevelArduino IO where
+    digitalWrite = foreign FFI_C "digitalWrite" (Bits8 -> Bits8 -> IO ())
+    pinMode      = foreign FFI_C "pinMode"      (Bits8 -> Bits8 -> IO ())
+    delay        = foreign FFI_C "delay"        (Int -> IO ())
 
 -- Note: functions naming was left to be (at least for now) as they were at the the original Arduino software.
 
