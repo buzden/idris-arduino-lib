@@ -12,6 +12,7 @@ namespace Raw
     digitalWrite : Bits8 -> Bits8 -> m ()
     pinMode      : Bits8 -> Bits8 -> m ()
     delay        : Int -> m ()
+    millis       : m Int
 
   %include C "Arduino.h"
 
@@ -19,6 +20,7 @@ namespace Raw
     digitalWrite = foreign FFI_C "digitalWrite" (Bits8 -> Bits8 -> IO ())
     pinMode      = foreign FFI_C "pinMode"      (Bits8 -> Bits8 -> IO ())
     delay        = foreign FFI_C "delay"        (Int -> IO ())
+    millis       = foreign FFI_C "millis"       (IO Int)
 
 -- Note: functions naming was left to be (at least for now) as they were at the the original Arduino software.
 
