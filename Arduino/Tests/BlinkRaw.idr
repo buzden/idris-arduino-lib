@@ -1,0 +1,14 @@
+import Arduino.Raw
+
+forever : Monad m => m a -> m b
+forever x = x >>= \_ => forever x
+
+export
+main : IO ()
+main = do
+  pinMode 13 1
+  forever $ do
+    digitalWrite 13 1
+    delay 1000
+    digitalWrite 13 0
+    delay 2000

@@ -5,6 +5,8 @@ modules = Arduino.Boards
         , Arduino.Lib
         , Arduino.Mega
         , Arduino.Protocols
+        , Arduino.Raw
+        , Arduino.Time
         , Arduino.Util
         , Arduino.Wrapper
 
