@@ -15,7 +15,7 @@ export
 pinMode : {board : Board} -> {auto hdp : HasDigitalPins board}
        -> (pin : Pin) -> {auto cbd : CanBeDigital {board} pin}
        -> (purpose : PinPurpose)
-       -> Ard board (const Unit) (oneFact pin purpose) IO ()
+       -> Ard board (const Unit) (oneFact pin purpose) IO Unit
 pinMode {board} {cbd} pin purpose = ard $ Arduino.Raw.pinMode (lowLevelNumberForDigitalPin {board} pin) (lowLevelNumberForPurpose purpose)
   where lowLevelNumberForPurpose : PinPurpose -> Bits8
         lowLevelNumberForPurpose Input  = 0
@@ -25,7 +25,7 @@ export
 digitalWrite : {board : Board} -> {auto hdp : HasDigitalPins board}
             -> (pin : Pin) -> {auto cbd : CanBeDigital {board} pin}
             -> DigitalPinValue
-            -> Ard board (LastFactEq pin Output) NoFacts IO ()
+            -> Ard board (LastFactEq pin Output) NoFacts IO Unit
 digitalWrite {board} {cbd} pin value = ard $ Arduino.Raw.digitalWrite (lowLevelNumberForDigitalPin {board} pin) (lowLevelNumberForValue value)
   where lowLevelNumberForValue : DigitalPinValue -> Bits8
         lowLevelNumberForValue Low  = 0
@@ -33,5 +33,5 @@ digitalWrite {board} {cbd} pin value = ard $ Arduino.Raw.digitalWrite (lowLevelN
 
 -- TODO To think, whether time delay is a fact to represent at the typelevel or not.
 export
-delay : {board : Board} -> Time -> Ard board (const Unit) NoFacts IO ()
+delay : {board : Board} -> Time -> Ard board (const Unit) NoFacts IO Unit
 delay = ard . Arduino.Time.delay

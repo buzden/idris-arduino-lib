@@ -5,7 +5,7 @@ forever : Monad m => m a -> m b
 forever x = do x; forever x
 
 export
-main : IO ()
+main : IO Unit
 main = runCoop $ do
   pinMode 13 1
   forever $ do

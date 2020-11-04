@@ -10,7 +10,7 @@ y : Pin
 y = D x
 
 export
-main : IO ()
+main : IO Unit
 main = runArd Mega2560 $ do
      pinMode (D 13) Output
      forever $ do
