@@ -9,7 +9,7 @@ main : IO Unit
 main = runCoop $ do
   pinMode 13 1
   pinMode 14 1
-  (<|>)
+  (<||>)
     (forever $ do
       digitalWrite 13 1
       delay 1000
