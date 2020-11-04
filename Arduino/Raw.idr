@@ -6,30 +6,49 @@ import Arduino.Util
 
 %default total
 
+-----------------
+--- Interface ---
+-----------------
+
 public export
 interface LowLevelArduino (m : Type -> Type) where
-  digitalWrite : Bits8 -> Bits8 -> m ()
-  pinMode      : Bits8 -> Bits8 -> m ()
+  digitalWrite : Bits8 -> Bits8 -> m Unit
+  pinMode      : Bits8 -> Bits8 -> m Unit
 
-%include C "Arduino.h"
+---------------------------------------
+--- Real (hardware) implementations ---
+---------------------------------------
+
+%foreign "C:digitalWrite,libarduino"
+prim_digitalWrite : Bits8 -> Bits8 -> PrimIO Unit
+
+%foreign "C:pinMode,libarduino"
+prim_pinMode : Bits8 -> Bits8 -> PrimIO Unit
 
 export
 LowLevelArduino IO where
-  digitalWrite = foreign FFI_C "digitalWrite" (Bits8 -> Bits8 -> IO ())
-  pinMode      = foreign FFI_C "pinMode"      (Bits8 -> Bits8 -> IO ())
+  digitalWrite = primIO ... prim_digitalWrite
+  pinMode      = primIO ... prim_pinMode
+
+%foreign "C:delay,libarduino"
+prim_delay : Bits32 -> PrimIO Unit
 
 export
 DelayableFor IO where
-  delay        = foreign FFI_C "delay"        (Int -> IO ()) . toMilliseconds
+  delay = primIO . prim_delay . toMilliseconds
 
-millis : IO Int
-millis = foreign FFI_C "millis" (IO Int)
+%foreign "C:millis,libarduino"
+prim_millis : PrimIO Bits32
 
 export
 Timed IO where
-  currentTime = map fromMilliseconds millis
+  currentTime = fromMilliseconds <$> primIO prim_millis
+
+-------------------------------
+--- Lifting implementations ---
+-------------------------------
 
 export
 LowLevelArduino m => LowLevelArduino (Coop m) where
-  digitalWrite = lift .. digitalWrite
-  pinMode      = lift .. pinMode
+  digitalWrite = lift ... digitalWrite
+  pinMode      = lift ... pinMode

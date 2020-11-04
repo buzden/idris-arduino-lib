@@ -3,7 +3,6 @@ module Arduino.Boards
 import public Arduino.Util
 
 %default total
-%access public export
 
 -----------------------
 -----------------------
@@ -12,12 +11,15 @@ import public Arduino.Util
 -----------------------
 
 -- How arduino pins are designated in board
+public export
 data Pin = D Nat
          | A Nat
          | DAC Nat
 
+public export
 data PinPurpose = Input | Output
 
+public export
 data Board = BoardLabel String (Maybe String)
 
 --------------------------------
@@ -26,8 +28,10 @@ data Board = BoardLabel String (Maybe String)
 --------------------------------
 --------------------------------
 
+public export
 data DigitalPinValue = Low | High
 
+public export
 interface HasDigitalPins (board : Board) where
   CanBeDigital : Pin -> Type
 
@@ -38,6 +42,7 @@ interface HasDigitalPins (board : Board) where
 --- Built-in LED ---
 --------------------
 
+public export
 interface HasDigitalPins board => HasBuiltIn_LED (board : Board) where
   LED : Pin
 
@@ -49,8 +54,10 @@ interface HasDigitalPins board => HasBuiltIn_LED (board : Board) where
 
 namespace Interrupts
 
+  public export
   data InterruptEvent = Low | High | Change | Rising | Falling
 
+  public export
   interface HasDigitalPins board => HasInterruptPins (board : Board) where
     CanBeInterrupt : Pin -> Type
     interruptForPin : (p : Pin) -> {auto cbi : CanBeInterrupt p} -> Nat
@@ -66,10 +73,12 @@ namespace Interrupts
 
 namespace Analogish
 
+  public export
   data AnalogType = PWM -- pulse-width modulation
                   | DAC -- digital-to-analog convertion
                   | ADC -- analog-to-digital convertion
 
+  public export
   interface HasAnalogPins (typ : AnalogType) (board : Board) where
     CanBeAnalog : Pin -> Type
 
