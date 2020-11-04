@@ -1,7 +1,7 @@
 import Arduino.Raw
 
 forever : Monad m => m a -> m b
-forever x = x >>= \_ => forever x
+forever x = do x; forever x
 
 export
 main : IO ()
