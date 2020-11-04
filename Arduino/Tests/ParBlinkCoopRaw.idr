@@ -6,10 +6,10 @@ forever x = do x; forever x
 
 export
 main : IO ()
-main = runCoop {a=Unit} $ do
+main = runCoop $ do
   pinMode 13 1
   pinMode 14 1
-  (<|>) {a=Unit} {b=Unit}
+  (<|>)
     (forever $ do
       digitalWrite 13 1
       delay 1000

@@ -6,7 +6,7 @@ forever x = do x; forever x
 
 export
 main : IO ()
-main = runCoop {a=Unit} $ do
+main = runCoop $ do
   pinMode 13 1
   forever $ do
     digitalWrite 13 1
