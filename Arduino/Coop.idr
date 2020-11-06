@@ -109,6 +109,28 @@ data Fence : (Type -> Type) -> Type where
 data Event : (Type -> Type) -> Type where
   Ev : (t : Time) -> Coop m x -> Fence m -> Event m
 
+namespace DebugStuff
+
+  public export
+  interface Debug (m : Type -> Type) where
+    debug : String -> m ()
+
+  export
+  Show (Coop m a) where
+    show (Point ma) = "atomic"
+    show (Sequential l _) = "sequential, starts with (" ++ show l ++ ")"
+    show (Cooperative a b) = "cooperative of (" ++ show a ++ ") and (" ++ show b ++ ")"
+    show (DelayedTill t) = "delay till " ++ show t
+
+  export
+  Show (Fence m) where
+    show No         = "nofence"
+    show (Sy n _ _) = "sync " ++ show n
+
+  export
+  Show (Event m) where
+    show (Ev t coop fence) = "@" ++ show t ++ ", " ++ show coop ++ ", " ++ show fence
+
 -- The following comparison is only according to the time; this will incorrectly work for sets.
 -- Equally timed events with different actions are considered to be equal with `==` relation.
 [TimeOnly_EvEq] Eq (Event m) where
@@ -118,7 +140,7 @@ data Event : (Type -> Type) -> Type where
   compare (Ev tl _ _) (Ev tr _ _) = tl `compare` tr
 
 export covering
-runCoop : (Monad m, Timed m) => Coop m Unit -> m Unit
+runCoop : (Monad m, Timed m, Debug m) => Coop m Unit -> m Unit
 runCoop co = runLeftEvents [Ev !currentTime co No] where
 
   -- TODO to replace list with a sortedness-preserving kinda-list
@@ -126,6 +148,7 @@ runCoop co = runLeftEvents [Ev !currentTime co No] where
   runLeftEvents : List $ Event m -> m Unit
   runLeftEvents [] = pure ()
   runLeftEvents evs@((Ev currEvTime currCoop currFence)::restEvs) = do
+    debug $ show evs
     nextEvs <- if !currentTime >= currEvTime
                then do
                  let newLeftEvs = merge @{TimeOnly_EvOrd} restEvs !newEvsAfterRunningCurr
