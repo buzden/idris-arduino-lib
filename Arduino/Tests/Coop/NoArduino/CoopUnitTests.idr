@@ -2,9 +2,14 @@ import Arduino.Coop
 
 import Control.Monad.State
 
+import Debug.Trace
+
 -------------------------------
 --- Preparation for testing ---
 -------------------------------
+
+Monad m => Debug m where
+  debug msg = trace msg $ pure ()
 
 Timed (State $ List String) where
   currentTime = length <$> get
