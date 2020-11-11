@@ -124,7 +124,7 @@ namespace DebugStuff
   export
   Show (Coop m a) where
     show (Point ma) = "atomic"
-    show (Sequential l c) = show l ++ " => " ++ "parameterized continuation"
+    show (Sequential l c) = "(" ++ show l ++ " => " ++ "parameterized continuation)"
     show (Cooperative a b) = "(" ++ show a ++ ") || (" ++ show b ++ ")"
     show (DelayedTill t) = "delay till " ++ show t
     show (DebugInfo msg c) = show c ++ " {" ++ msg ++ "}"
