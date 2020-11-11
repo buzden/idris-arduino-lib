@@ -129,7 +129,7 @@ namespace DebugStuff
 
   export
   Show (Event m) where
-    show (Ev t coop fence) = "@" ++ show t ++ ", " ++ show coop ++ ", " ++ show fence
+    show (Ev t coop fence) = show t ++ " | " ++ show coop ++ " | " ++ show fence
 
 -- The following comparison is only according to the time; this will incorrectly work for sets.
 -- Equally timed events with different actions are considered to be equal with `==` relation.
