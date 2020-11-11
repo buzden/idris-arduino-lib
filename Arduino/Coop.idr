@@ -56,6 +56,7 @@ infixl 4 $>
 ($>) : Applicative m => Coop m a -> b -> Coop m b
 (Point _)        $> b = Point $ pure b
 (Sequential a f) $> b = Sequential a $ \ar => f ar $> b
+(DebugInfo msg c) $> b = DebugInfo (msg ++ " {$>-ed}") $ c $> b
 x                $> b = Sequential x . const . Point $ pure b
 
 export
