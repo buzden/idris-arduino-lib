@@ -154,11 +154,11 @@ runCoop co = runLeftEvents [Ev !currentTime co No] where
   covering
   runLeftEvents : List $ Event m -> m Unit
   runLeftEvents [] = pure ()
-  runLeftEvents evs@((Ev currEvTime currCoop currFence)::restEvs) = do
+  runLeftEvents evs@(currEv@(Ev currEvTime currCoop currFence)::restEvs) = do
     debug $ show evs
     nextEvs <- if !currentTime >= currEvTime
                then do
-                 let newLeftEvs = merge @{TimeOnly_EvOrd} restEvs !newEvsAfterRunningCurr
+                 let newLeftEvs = merge @{TimeOnly_EvOrd} restEvs !(newEvsAfterRunningCurr currEv)
                  pure $ merge @{TimeOnly_EvOrd} newLeftEvs $ awakened newLeftEvs
                else
                  -- TODO else wait for the `currEvTime - !currentTime`; or support and perform permanent tasks
@@ -180,8 +180,8 @@ runCoop co = runLeftEvents [Ev !currentTime co No] where
         Z   => S $ foldl max 0 ss -- or maximal plus 1
 
     -- All actions of form `patterm => pure [Ev ..., ...]` can be thought as a rewriting rule upon the list of events.
-    newEvsAfterRunningCurr : m (List $ Event m)
-    newEvsAfterRunningCurr = case currCoop of
+    newEvsAfterRunningCurr : Event m -> m (List $ Event m)
+    newEvsAfterRunningCurr (Ev currEvTime currCoop currFence) = case currCoop of
       Point x                        => x $> Nil
       Cooperative l r                => pure [Ev currEvTime l currFence, Ev currEvTime r currFence]
       DelayedTill d                  => pure [Ev d (Point $ pure ()) currFence] -- this enables currFence to be run when appropriate (delayed)
@@ -190,8 +190,8 @@ runCoop co = runLeftEvents [Ev !currentTime co No] where
       Sequential (DelayedTill d)   f => pure [Ev d (f ()) currFence]
       Sequential (Cooperative l r) f => let newFence = Sy (Force uniqueSync) (f ()) currFence in -- coop in the `currFence` needs to be run after the `f ()`
                                         pure [Ev currEvTime l newFence, Ev currEvTime r newFence]
-      DebugInfo _ c                  => pure [Ev currEvTime c currFence]
-      Sequential (DebugInfo _ c)   f => pure [Ev currEvTime (Sequential c f) currFence]
+      DebugInfo _ c                  => newEvsAfterRunningCurr $ Ev currEvTime c currFence
+      Sequential (DebugInfo _ c)   f => newEvsAfterRunningCurr $ Ev currEvTime (Sequential c f) currFence
 
     awakened : (evsAfterCurr : List $ Event m) -> List $ Event m
     awakened evsAfterCurr = case currFence of
