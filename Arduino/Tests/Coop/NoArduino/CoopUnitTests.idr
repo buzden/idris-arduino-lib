@@ -42,7 +42,17 @@ main = do
   printLn "test: return time at the start"
   (exec $ currentTime >>= append . show) === ["0"]
 
-  printLn "test: return time at the start and then just a string"
+  printLn "test: return time at the start, delay and then just a string"
+  (exec $ do
+    --delay 1
+    ct <- currentTime
+    delay 2
+    append $ show ct
+    --delay 3
+    append "test"
+    ) === ["0", "test"]
+
+  printLn $ "test: return time at the start and then just a string, no delays"
   (exec $ currentTime >>= append . show >>= \() => append "test") === ["0", "test"]
 
   printLn "test: consequent appends"
