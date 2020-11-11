@@ -29,6 +29,7 @@ data Coop : (m : Type -> Type) -> (a : Type) -> Type where
   Sequential  : Coop m a -> (a -> Coop m b) -> Coop m b
   Cooperative : Coop m a -> Coop m b -> Coop m Unit
   DelayedTill : Time -> Coop m Unit
+  DebugInfo   : String -> Coop m a -> Coop m a
 
 --------------------------------
 --- Basic creation functions ---
@@ -37,6 +38,10 @@ data Coop : (m : Type -> Type) -> (a : Type) -> Type where
 export
 atomic : (1 _ : m a) -> Coop m a
 atomic = Point
+
+export
+debugInfo : String -> Coop m a -> Coop m a
+debugInfo = DebugInfo
 
 -----------------------
 --- Implementations ---
@@ -59,6 +64,7 @@ Applicative m => Functor (Coop m) where
   map f (Sequential a b)    = Sequential a $ \ar => map f $ b ar
   map f x@(Cooperative _ _) = x $> f ()
   map f x@(DelayedTill t)   = x $> f ()
+  map f (DebugInfo msg c)   = DebugInfo (msg ++ " {mapped}") $ map f c
 
 export
 Applicative m => Applicative (Coop m) where
@@ -121,6 +127,7 @@ namespace DebugStuff
     show (Sequential l c) = show l ++ " => " ++ "parameterized continuation"
     show (Cooperative a b) = "(" ++ show a ++ ") || (" ++ show b ++ ")"
     show (DelayedTill t) = "delay till " ++ show t
+    show (DebugInfo msg c) = show c ++ " {" ++ msg ++ "}"
 
   export
   Show (Fence m) where
@@ -183,6 +190,8 @@ runCoop co = runLeftEvents [Ev !currentTime co No] where
       Sequential (DelayedTill d)   f => pure [Ev d (f ()) currFence]
       Sequential (Cooperative l r) f => let newFence = Sy (Force uniqueSync) (f ()) currFence in -- coop in the `currFence` needs to be run after the `f ()`
                                         pure [Ev currEvTime l newFence, Ev currEvTime r newFence]
+      DebugInfo _ c                  => pure [Ev currEvTime c currFence]
+      Sequential (DebugInfo _ c)   f => pure [Ev currEvTime (Sequential c f) currFence]
 
     awakened : (evsAfterCurr : List $ Event m) -> List $ Event m
     awakened evsAfterCurr = case currFence of
