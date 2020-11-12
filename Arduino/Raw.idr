@@ -4,6 +4,8 @@ import Arduino.Coop
 import public Arduino.Time
 import Arduino.Util
 
+import Control.Monad.Trans
+
 %default total
 
 -----------------
@@ -49,6 +51,6 @@ Timed IO where
 -------------------------------
 
 export
-LowLevelArduino m => LowLevelArduino (Coop m) where
+(LowLevelArduino m, Monad m) => LowLevelArduino (Coop m) where
   digitalWrite = lift ... digitalWrite
   pinMode      = lift ... pinMode
