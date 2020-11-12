@@ -14,9 +14,13 @@ Monad m => Debug m where
 Timed (State $ List String) where
   currentTime = length <$> get
 
+MonadState st m => MonadState st (Coop m) where
+  get = debugInfo "get" $ lift get
+  put = debugInfo "put" . lift . put
+
 -- Awfully inefficient implementation, but will work for small tests.
-append : MonadState (List a) m => a -> m ()
-append x = modify (++ [x])
+append : Show a => MonadState (List a) m => a -> Coop m ()
+append x = debugInfo ("append " ++ show x) $ modify (++ [x])
 
 exec : Coop (State $ List String) Unit -> List String
 exec = execState [] . runCoop
@@ -25,10 +29,6 @@ exec = execState [] . runCoop
 x === y = if x == y
             then printLn "- [ok]"
             else printLn $ "- [VIOLATION] got " ++ show x ++ " but expected " ++ show y
-
-MonadState st m => MonadState st (Coop m) where
-  get = lift get
-  put = lift . put
 
 -----------------------
 --- Unit test cases ---

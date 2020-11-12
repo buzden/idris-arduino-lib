@@ -49,27 +49,27 @@ debugInfo = DebugInfo
 
 export
 Timed m => Timed (Coop m) where
-  currentTime = Point currentTime
+  currentTime = debugInfo "returned curr time" $ Point currentTime
 
 infixl 4 $>
 
 ($>) : Applicative m => Coop m a -> b -> Coop m b
-(Point _)        $> b = Point $ pure b
+(Point _)        $> b = debugInfo "point $>" . Point $ pure b
 (Sequential a f) $> b = Sequential a $ \ar => f ar $> b
-(DebugInfo msg c) $> b = DebugInfo (msg ++ " {$>-ed}") $ c $> b
-x                $> b = Sequential x . const . Point $ pure b
+(DebugInfo msg c) $> b = debugInfo (msg ++ " {$>-ed}") $ c $> b
+x                $> b = Sequential x . const . debugInfo "point abandon" . Point $ pure b
 
 export
 Applicative m => Functor (Coop m) where
-  map f (Point a)           = Point (map f a)
+  map f (Point a)           = debugInfo "map-point" $ Point (map f a)
   map f (Sequential a b)    = Sequential a $ \ar => map f $ b ar
   map f x@(Cooperative _ _) = x $> f ()
   map f x@(DelayedTill t)   = x $> f ()
-  map f (DebugInfo msg c)   = DebugInfo (msg ++ " {mapped}") $ map f c
+  map f (DebugInfo msg c)   = debugInfo (msg ++ " {mapped}") $ map f c
 
 export
 Applicative m => Applicative (Coop m) where
-  pure    = Point . pure
+  pure    = debugInfo "appl pure" . Point . pure
   l <*> r = Sequential l $ \lf => map lf r
   -- This could be `(<*>) = Cooperative apply`, but it must be consistent with `(>>=)` definition.
   -- Consider code `doSmth *> delayedFor 100 *> doMore` comparing to `(doSmth <||> delayedFor 100) *> doMore`.
@@ -185,10 +185,10 @@ runCoop co = runLeftEvents [Ev !currentTime co No] where
     newEvsAfterRunningCurr (Ev currEvTime currCoop currFence) = case currCoop of
       Point x                        => x $> Nil
       Cooperative l r                => pure [Ev currEvTime l currFence, Ev currEvTime r currFence]
-      DelayedTill d                  => pure [Ev d (Point $ pure ()) currFence] -- this enables currFence to be run when appropriate (delayed)
-      Sequential (Point y)         f => map (\r => [Ev currEvTime (f r) currFence]) y
-      Sequential (Sequential y g)  f => pure [Ev currEvTime (Sequential y $ g >=> f) currFence]
-      Sequential (DelayedTill d)   f => pure [Ev d (f ()) currFence]
+      DelayedTill d                  => pure [Ev d (debugInfo "delayed end" . Point $ pure ()) currFence] -- this enables currFence to be run when appropriate (delayed)
+      Sequential (Point y)         f => map (\r => [Ev currEvTime (debugInfo "applied continuation" $ f r) currFence]) y
+      Sequential (Sequential y g)  f => pure [Ev currEvTime (debugInfo "postponed seq" $ Sequential y $ debugInfo "postponed tail" . g >=> f) currFence]
+      Sequential (DelayedTill d)   f => pure [Ev d (debugInfo "delayed seq" $ f ()) currFence]
       Sequential (Cooperative l r) f => let newFence = Sy (Force uniqueSync) (f ()) currFence in -- coop in the `currFence` needs to be run after the `f ()`
                                         pure [Ev currEvTime l newFence, Ev currEvTime r newFence]
       DebugInfo _ c                  => newEvsAfterRunningCurr $ Ev currEvTime c currFence
