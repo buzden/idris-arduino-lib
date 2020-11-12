@@ -9,7 +9,7 @@ import Debug.Trace
 -------------------------------
 
 Monad m => Debug m where
-  debug msg = trace msg $ pure ()
+  debug msg = {- trace msg $ -} pure ()
 
 Timed (State $ List String) where
   currentTime = length <$> get
