@@ -10,6 +10,6 @@ main = runCoop $ do
   pinMode 13 1
   forever $ do
     digitalWrite 13 1
-    delay 1000
+    delayFor 1000
     digitalWrite 13 0
-    delay 2000
+    delayFor 2000
