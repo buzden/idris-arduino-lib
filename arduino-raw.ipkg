@@ -1,0 +1,9 @@
+package arduino-raw
+
+modules = Arduino.Raw
+        , Arduino.Time
+        , Arduino.Util
+
+depends = coop, contrib
+
+sourcedir = "src"

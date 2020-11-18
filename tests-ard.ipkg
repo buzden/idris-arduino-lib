@@ -1,0 +1,8 @@
+package arduino-ard-tests
+
+modules =
+    Tests.Arduino.ByArd.Blink_IO_Single
+
+depends = arduino-ard
+
+sourcedir = "src"

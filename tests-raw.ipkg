@@ -1,0 +1,10 @@
+package arduino-raw-tests
+
+modules =
+    Tests.Arduino.ByRaw.Blink_Coop_Parallel
+  , Tests.Arduino.ByRaw.Blink_Coop_Single
+  , Tests.Arduino.ByRaw.Blink_IO_Single
+
+depends = arduino-raw, coop, contrib
+
+sourcedir = "src"

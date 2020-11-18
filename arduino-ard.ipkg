@@ -1,0 +1,11 @@
+package arduino-ard
+
+modules = Arduino.Boards
+        , Arduino.Lib
+        , Arduino.Mega
+        , Arduino.Protocols
+        , Arduino.Wrapper
+
+depends = coop, arduino-raw
+
+sourcedir = "src"

@@ -1,9 +1,9 @@
 module Arduino.Raw
 
-import Arduino.Coop
 import public Arduino.Time
 import Arduino.Util
 
+import Control.Monad.Coop
 import Control.Monad.Trans
 
 %default total

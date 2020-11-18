@@ -1,5 +1,6 @@
-import Arduino.Coop
 import Arduino.Raw
+
+import Control.Monad.Coop
 
 forever : Monad m => m a -> m b
 forever x = do x; forever x
