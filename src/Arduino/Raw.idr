@@ -37,7 +37,7 @@ prim_delay : Bits32 -> PrimIO Unit
 
 export
 DelayableFor IO where
-  delayFor = primIO . prim_delay . toMilliseconds
+  sleepFor = primIO . prim_delay . toMilliseconds
 
 %foreign "C:millis,libarduino"
 prim_millis : PrimIO Bits32

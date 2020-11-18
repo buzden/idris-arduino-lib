@@ -15,6 +15,6 @@ main = runArd Mega2560 $ do
      pinMode (D 13) Output
      forever $ do
        digitalWrite (D 13) High
-       delayFor 1000
+       sleepFor 1000
        digitalWrite (D 13) Low
-       delayFor 2000
+       sleepFor 2000

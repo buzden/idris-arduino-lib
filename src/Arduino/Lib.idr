@@ -33,5 +33,5 @@ digitalWrite {board} {cbd} pin value = ard $ Arduino.Raw.digitalWrite (lowLevelN
 
 -- TODO To think, whether a time of the delay is a fact to represent at the typelevel or not.
 export
-delayFor : {board : Board} -> Time -> Ard board (const Unit) NoFacts IO Unit
-delayFor = ard . Arduino.Time.delay
+sleepFor : {board : Board} -> Time -> Ard board (const Unit) NoFacts IO Unit
+sleepFor = ard . Arduino.Time.sleepFor
