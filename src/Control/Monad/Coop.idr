@@ -132,7 +132,7 @@ runCoop co = runLeftEvents [Ev !currentTime co No] where
   covering
   runLeftEvents : List $ Event m -> m Unit
   runLeftEvents [] = pure ()
-  runLeftEvents evs@((Ev currEvTime currCoop currFence)::restEvs) = do
+  runLeftEvents evs@(currEv@(Ev currEvTime currCoop currFence)::restEvs) = do
     nextEvs <- if !currentTime >= currEvTime
                then do
                  let newLeftEvs = merge @{TimeOnly_EvOrd} restEvs !newEvsAfterRunningCurr
@@ -160,10 +160,10 @@ runCoop co = runLeftEvents [Ev !currentTime co No] where
     newEvsAfterRunningCurr : m (List $ Event m)
     newEvsAfterRunningCurr = case currCoop of
       Point x                        => x $> Nil
-      Cooperative l r                => pure [Ev currEvTime l currFence, Ev currEvTime r currFence]
+      Cooperative l r                => pure [{coop := l} currEv, {coop := r} currEv]
       DelayedTill d                  => pure [Ev d (Point $ pure ()) currFence] -- this enables currFence to be run when appropriate (delayed)
-      Sequential (Point y)         f => map (\r => [Ev currEvTime (f r) currFence]) y
-      Sequential (Sequential y g)  f => pure [Ev currEvTime (Sequential y $ g >=> f) currFence]
+      Sequential (Point y)         f => map (\r => [{coop := f r} currEv]) y
+      Sequential (Sequential y g)  f => pure [{coop := Sequential y $ g >=> f} currEv]
       Sequential (DelayedTill d)   f => pure [Ev d (f ()) currFence]
       Sequential (Cooperative l r) f => let newFence = Sy (Force uniqueSync) (f ()) currFence in -- coop in the `currFence` needs to be run after the `f ()`
                                         pure [Ev currEvTime l newFence, Ev currEvTime r newFence]
