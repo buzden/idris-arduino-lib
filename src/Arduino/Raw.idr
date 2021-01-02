@@ -13,7 +13,7 @@ import Control.Monad.Trans
 -----------------
 
 public export
-interface LowLevelArduino (m : Type -> Type) where
+interface LowLevelArduino m where
   digitalWrite : Bits8 -> Bits8 -> m Unit
   pinMode      : Bits8 -> Bits8 -> m Unit
 

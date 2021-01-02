@@ -32,7 +32,7 @@ public export
 data DigitalPinValue = Low | High
 
 public export
-interface HasDigitalPins (board : Board) where
+interface HasDigitalPins (0 board : Board) where
   CanBeDigital : Pin -> Type
 
   lowLevelNumberForDigitalPin : (p : Pin) -> {auto cbd : CanBeDigital p} -> Bits8
@@ -43,7 +43,7 @@ interface HasDigitalPins (board : Board) where
 --------------------
 
 public export
-interface HasDigitalPins board => HasBuiltIn_LED (board : Board) where
+interface HasDigitalPins board => HasBuiltIn_LED (0 board : Board) where
   LED : Pin
 
   Builtin_LED_IsDigital : CanBeDigital {board} LED
@@ -58,7 +58,7 @@ namespace Interrupts
   data InterruptEvent = Low | High | Change | Rising | Falling
 
   public export
-  interface HasDigitalPins board => HasInterruptPins (board : Board) where
+  interface HasDigitalPins board => HasInterruptPins (0 board : Board) where
     CanBeInterrupt : Pin -> Type
     interruptForPin : (p : Pin) -> {auto cbi : CanBeInterrupt p} -> Nat
     PinSupportsMode : (p : Pin) -> {auto cbi : CanBeInterrupt p} -> InterruptEvent -> Type
@@ -79,7 +79,7 @@ namespace Analogish
                   | ADC -- analog-to-digital convertion
 
   public export
-  interface HasAnalogPins (typ : AnalogType) (board : Board) where
+  interface HasAnalogPins (0 typ : AnalogType) (0 board : Board) where
     CanBeAnalog : Pin -> Type
 
     lowLevelNumberForAnalogPin : (p : Pin) -> {auto cba : CanBeAnalog p} -> Bits8

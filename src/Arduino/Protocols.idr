@@ -21,7 +21,7 @@ record HardwareProtocol where
   protocolName : String
   protocolPinsCount : Nat
 
-interface HasDigitalPins board => HasProtocol (prot : HardwareProtocol) (board : Board) where
+interface HasDigitalPins board => HasProtocol (0 prot : HardwareProtocol) (0 board : Board) where
   ProtocolPinGroupsCount : Nat
 
   ProtocolPins : Fin ProtocolPinGroupsCount -> Vect (protocolPinsCount prot) Pin
